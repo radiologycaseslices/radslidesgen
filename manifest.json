@@ -1,0 +1,25 @@
+{
+  "name": "RadSlides Gen",
+  "short_name": "RadSlides",
+  "description": "Instagram slide maker for radiology educators",
+  "start_url": "/radslidesgen/",
+  "scope": "/radslidesgen/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192-1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512-1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
