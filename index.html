@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RadSlides Gen</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1220">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0b1220;
+  --surface: #131d2e;
+  --surface2: #1a2740;
+  --border: #1f3050;
+  --accent: #00c2ff;
+  --accent2: #ffd166;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --radius: 10px;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px 16px 48px;
+}
+
+/* ── Header ── */
+header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+header p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ── Panel ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+/* ── Editors ── */
+#editor, #comments {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  outline: none;
+  text-align: left;
+  min-height: 130px;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+}
+
+#comments { min-height: 60px; }
+
+/* ── Placeholder for contenteditable ── */
+#editor:empty::before {
+  content: "# Sign Name\n\n- Key point 1\n- Key point 2\n\n---\n\n# Slide 2\n\n- Next slide";
+  color: var(--muted);
+  pointer-events: none;
+  white-space: pre;
+}
+#comments:empty::before {
+  content: "Caption for image 1 --- Caption for image 2";
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── Arrow annotation overlay ── */
+.image-item {
+  position: relative;
+}
+.arrow-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* height set by JS to match img */
+  border-radius: 12px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.clear-arrows-btn {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0,0,0,0.6);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b55;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 7px;
+  cursor: pointer;
+  z-index: 10;
+  line-height: 1.6;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+}
+
+.toolbar button {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.toolbar button:hover { background: var(--border); }
+
+.btn-cyan  { border-color: #00c2ff33 !important; color: #00c2ff !important; }
+.btn-yellow{ border-color: #ffd16633 !important; color: #ffd166 !important; }
+.btn-red   { border-color: #ff6b6b33 !important; color: #ff6b6b !important; }
+.btn-green { border-color: #4ade8033 !important; color: #4ade80 !important; }
+
+.cap-align-btn { opacity: 0.5; }
+.cap-align-btn.active-align { opacity: 1; border-color: var(--accent) !important; color: var(--accent) !important; }
+
+.btn-title { border-color: #ffd16633 !important; color: #ffd166 !important; font-weight: 700; }
+
+.toolbar-sep {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 0 2px;
+}
+
+/* ── Controls row ── */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+}
+
+.controls label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+input[type="file"] {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 180px;
+}
+input[type="file"]::-webkit-file-upload-button {
+  background: var(--surface);
+  color: var(--accent);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-right: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ── Action buttons ── */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary  { background: var(--accent); color: #000; }
+.btn-outline  { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-download { background: var(--accent2); color: #000; }
+
+/* ── Slide counter ── */
+.slide-info {
+  font-size: 12px;
+  color: var(--muted);
+  align-self: center;
+  margin-left: auto;
+}
+
+/* ── Slide preview wrapper ── */
+.slide-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+  overflow: hidden;
+}
+
+.slide-frame {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: inline-block;
+  /* Scale down on small screens */
+  transform-origin: top center;
+}
+
+/* ── THE SLIDE — DO NOT CHANGE ── */
+#slide {
+  width: 1080px;
+  height: 1080px;
+  background: #0b1a2b;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 60px 80px 80px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+#watermark {
+  position: absolute;
+  bottom: 28px;
+  right: 80px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.25);
+  font-family: 'Segoe UI', sans-serif;
+  pointer-events: none;
+  user-select: none;
+}
+
+.image-grid {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+.grid-1 { grid-template-columns: 1fr; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: 1fr 1fr; }
+.grid-4 { grid-template-columns: 1fr 1fr; }
+
+.image-item { display: flex; flex-direction: column; }
+.image-item img {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.caption { font-size: 24px; margin-top: 6px; color: #d1d5db; text-align: left; }
+
+#slideText { text-align: left; width: 100%; line-height: 1.5; }
+#slideText h1 { font-size: 70px; margin-bottom: 10px; }
+#slideText h1.title-center {
+  font-size: 80px;
+  text-align: center;
+  margin: auto 0;
+  line-height: 1.3;
+  color: #00c2ff;
+}
+#slideText h2 { font-size: 55px; margin-bottom: 10px; }
+#slideText h3 { font-size: 45px; margin-bottom: 10px; }
+#slideText p  { font-size: 38px; margin-bottom: 12px; }
+#slideText strong { font-weight: 700; }
+#slideText ul { padding-left: 30px; }
+#slideText li { font-size: 36px; margin-bottom: 8px; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>RadSlides Gen</h1>
+  <p>1080 × 1080 · Instagram-ready</p>
+</header>
+
+<div class="layout">
+
+  <!-- Text Editor -->
+  <div class="panel">
+    <div class="panel-title">Slide Content (markdown · use --- to separate slides)</div>
+    <div id="editor" contenteditable="true"></div>
+
+    <!-- Format Toolbar -->
+    <div class="toolbar">
+      <button onclick="applyBold()"><b>B</b></button>
+      <div class="toolbar-sep"></div>
+      <button class="btn-cyan"   onclick="applyColor('#00c2ff')">Cyan</button>
+      <button class="btn-yellow" onclick="applyColor('#ffd166')">Yellow</button>
+      <button class="btn-red"    onclick="applyColor('#ff6b6b')">Red</button>
+      <button class="btn-green"  onclick="applyColor('#4ade80')">Green</button>
+      <div class="toolbar-sep"></div>
+      <button onclick="alignText('left')">⇐ Left</button>
+      <button onclick="alignText('center')">⇔ Center</button>
+      <div class="toolbar-sep"></div>
+      <button onclick="increaseFont()">A+</button>
+      <button onclick="decreaseFont()">A−</button>
+      <button onclick="setAuto()">Auto</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn-title" onclick="insertTitle()">⊤ Title</button>
+    </div>
+  </div>
+
+  <!-- Captions -->
+  <div class="panel">
+    <div class="panel-title">Image Captions (separate with ---)</div>
+    <div id="comments" contenteditable="true"></div>
+    <div class="toolbar">
+      <span style="font-size:11px;color:var(--muted);align-self:center;">Caption align:</span>
+      <button onclick="setCaptionAlign('left')"  id="capLeft"   class="cap-align-btn active-align">⇐ Left</button>
+      <button onclick="setCaptionAlign('center')" id="capCenter" class="cap-align-btn">⇔ Center</button>
+    </div>
+  </div>
+
+  <!-- Upload + Actions -->
+  <div class="panel">
+    <div class="controls">
+      <label>Images (max 4)</label>
+      <input type="file" id="imageInput" multiple accept="image/*">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary"  onclick="generateSlides()">⚡ Generate</button>
+      <button class="btn btn-outline"  onclick="prevSlide()">← Prev</button>
+      <button class="btn btn-outline"  onclick="nextSlide()">Next →</button>
+      <button class="btn btn-outline"  onclick="clearImages()">✕ Clear Images</button>
+      <button class="btn btn-download" onclick="downloadSlide()">↓ Download PNG</button>
+      <span class="slide-info" id="slideCounter">Slide — / —</span>
+    </div>
+  </div>
+
+  <!-- Slide Preview -->
+  <div class="slide-wrapper">
+    <div class="slide-frame">
+      <div id="slide">
+        <div id="imageContainer"></div>
+        <div id="slideText"></div>
+        <div id="watermark">@radiologycaseslices</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<script>
+let slides = [];
+let currentSlide = 0;
+let images = [];
+let captions = [];
+let manualFontSize = null;
+let captionAlign = 'left';
+let previewTimer = null;
+
+// ── Live preview: debounced, fires 800ms after you stop typing ──
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    // Only re-generate if slides already exist OR it's first time
+    const savedSlide = currentSlide;
+    generateSlides();
+    // Stay on same slide if still valid, don't jump to slide 1
+    if (savedSlide < slides.length) {
+      currentSlide = savedSlide;
+      showSlide();
+    }
+  }, 800);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('editor').addEventListener('input', schedulePreview);
+  document.getElementById('comments').addEventListener('input', schedulePreview);
+});
+
+// ── Mobile: scale slide preview to fit screen ──
+function scaleSlide() {
+  const frame = document.querySelector('.slide-frame');
+  const wrapper = document.querySelector('.slide-wrapper');
+  const available = wrapper.clientWidth - 32; // padding
+  const slideSize = 1080 + 28; // slide + frame padding
+  const scale = Math.min(1, available / slideSize);
+  frame.style.transform = `scale(${scale})`;
+  // Collapse the whitespace the scaled element leaves behind
+  const scaledHeight = (1080 + 28) * scale;
+  wrapper.style.height = (scaledHeight + 40) + 'px';
+}
+window.addEventListener('resize', scaleSlide);
+window.addEventListener('load', scaleSlide);
+
+// ── Title button: insert # at start of current line ──
+function insertTitle() {
+  const editor = document.getElementById('editor');
+  editor.focus();
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  // Move to start of line and insert #
+  document.execCommand('insertText', false, '# ');
+}
+
+// ── Keep editor focused after toolbar button click ──
+function refocusEditor() {
+  document.getElementById("editor").focus();
+}
+
+// ── Bold ──
+function applyBold() {
+  refocusEditor();
+  document.execCommand('bold', false, null);
+}
+
+// ── Color ──
+function applyColor(color) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('foreColor', false, color);
+}
+
+// ── Align ──
+function alignText(type) {
+  document.getElementById("editor").style.textAlign = type;
+}
+
+// ── Font size ──
+function increaseFont() {
+  if (!manualFontSize) manualFontSize = 80;
+  manualFontSize = Math.min(manualFontSize + 10, 140);
+  showSlide();
+}
+function decreaseFont() {
+  if (!manualFontSize) manualFontSize = 80;
+  manualFontSize = Math.max(manualFontSize - 10, 20);
+  showSlide();
+}
+function setAuto() {
+  manualFontSize = null;
+  showSlide();
+}
+
+// ── Caption align ──
+function setCaptionAlign(type) {
+  captionAlign = type;
+  document.getElementById('capLeft').classList.toggle('active-align', type === 'left');
+  document.getElementById('capCenter').classList.toggle('active-align', type === 'center');
+  showSlide();
+}
+
+// ── Images ──
+document.getElementById("imageInput").addEventListener("change", function(e) {
+  images = Array.from(e.target.files).slice(0, 4);
+});
+
+function clearImages() {
+  images = [];
+  document.getElementById("imageInput").value = "";
+  document.getElementById("imageContainer").innerHTML = "";
+}
+
+// ── GENERATE ──
+function generateSlides() {
+  const editor = document.getElementById("editor");
+  let html = editor.innerHTML;
+
+  html = html
+    .replace(/<div><br\s*\/?><\/div>/gi, '\n')
+    .replace(/<div[^>]*>/gi, '\n')
+    .replace(/<\/div>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/&nbsp;/g, ' ');
+
+  const parts = html.split(/\n[ \t]*---[ \t]*\n/);
+  slides = parts.map(s => s.trim());
+  captions = document.getElementById("comments").innerText.split("---");
+  currentSlide = 0;
+  showSlide();
+}
+
+// ── Parse inline markdown (bold/italic) — works on plain text AND html mixed lines ──
+function applyInline(line) {
+  // Handle ** bold ** — both markdown typed and literal text
+  return line
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+}
+
+// ── SHOW ──
+function showSlide() {
+  if (slides.length === 0) return;
+
+  const text = document.getElementById("slideText");
+  const container = document.getElementById("imageContainer");
+  let html = slides[currentSlide] || "";
+
+  const lines = html.split('\n');
+  let output = '';
+  let inList = false;
+
+  // Detect title slide: only one non-empty line and it's a # heading
+  const nonEmpty = lines.map(l => l.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+  const isTitleSlide = nonEmpty.length === 1 && nonEmpty[0].match(/^#+\s/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const headingMatch = line.match(/^(#{1,3})\s+(.*)/);
+    const listMatch = line.match(/^\s*[-*]\s+(.*)/);
+
+    if (headingMatch) {
+      if (inList) { output += '</ul>'; inList = false; }
+      const level = headingMatch[1].length;
+      const cls = isTitleSlide ? ' class="title-center"' : '';
+      output += `<h${level}${cls}>${applyInline(headingMatch[2])}</h${level}>`;
+    } else if (listMatch) {
+      if (!inList) { output += '<ul>'; inList = true; }
+      output += `<li>${applyInline(listMatch[1])}</li>`;
+    } else {
+      if (inList) { output += '</ul>'; inList = false; }
+      if (line.trim() === '') {
+        output += '<br>';
+      } else {
+        output += applyInline(line) + '<br>';
+      }
+    }
+  }
+  if (inList) output += '</ul>';
+
+  // Center vertically for title slides
+  text.style.display = isTitleSlide ? 'flex' : '';
+  text.style.flexDirection = isTitleSlide ? 'column' : '';
+  text.style.justifyContent = isTitleSlide ? 'center' : '';
+  text.style.alignItems = isTitleSlide ? 'center' : '';
+  text.style.flex = isTitleSlide ? '1' : '';
+
+  text.innerHTML = output;
+
+  if (manualFontSize) {
+    text.style.fontSize = manualFontSize + "px";
+  } else {
+    autoFitText(text);
+  }
+
+  // Images
+  container.innerHTML = "";
+  if (images.length > 0) {
+    const grid = document.createElement("div");
+    grid.className = "image-grid grid-" + images.length;
+
+    images.forEach((file, i) => {
+      const item = document.createElement("div");
+      item.className = "image-item";
+
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+
+      // Arrow annotation canvas — added after img loads so size is known
+      const canvas = document.createElement("canvas");
+      canvas.className = "arrow-canvas";
+
+      // Clear button
+      const clearBtn = document.createElement("button");
+      clearBtn.className = "clear-arrows-btn";
+      clearBtn.textContent = "✕ arrows";
+      clearBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.style.height = img.offsetHeight + "px";
+      };
+
+      // Tap+drag to set direction — arrowhead placed at start, pointing toward drag end
+      let dragStart = null;
+
+      function getPos(e, rect) {
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const src = e.touches ? e.touches[0] : e;
+        return {
+          x: (src.clientX - rect.left) * scaleX,
+          y: (src.clientY - rect.top) * scaleY
+        };
+      }
+
+      function onStart(e) {
+        e.preventDefault();
+        dragStart = getPos(e, canvas.getBoundingClientRect());
+      }
+
+      function onEnd(e) {
+        if (!dragStart) return;
+        e.preventDefault();
+        const src = e.changedTouches ? e.changedTouches[0] : e;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const end = {
+          x: (src.clientX - rect.left) * scaleX,
+          y: (src.clientY - rect.top) * scaleY
+        };
+        const dx = end.x - dragStart.x;
+        const dy = end.y - dragStart.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        // Only draw if dragged at least 10 canvas-pixels
+        if (dist > 10) {
+          const angle = Math.atan2(dy, dx);
+          drawArrowhead(canvas, dragStart.x, dragStart.y, angle);
+        }
+        dragStart = null;
+      }
+
+      canvas.addEventListener("mousedown", onStart);
+      canvas.addEventListener("mouseup", onEnd);
+      canvas.addEventListener("touchstart", onStart, { passive: false });
+      canvas.addEventListener("touchend", onEnd, { passive: false });
+
+      const cap = document.createElement("div");
+      cap.className = "caption";
+      cap.style.textAlign = captionAlign;
+      cap.innerText = captions[i] ? captions[i].trim() : "";
+
+      item.appendChild(img);
+      item.appendChild(canvas);
+      item.appendChild(clearBtn);
+      item.appendChild(cap);
+      grid.appendChild(item);
+    });
+
+    container.appendChild(grid);
+  }
+
+  document.getElementById("slideCounter").textContent =
+    `Slide ${currentSlide + 1} / ${slides.length}`;
+}
+
+// ── Navigation ──
+function nextSlide() {
+  if (currentSlide < slides.length - 1) { currentSlide++; showSlide(); }
+}
+function prevSlide() {
+  if (currentSlide > 0) { currentSlide--; showSlide(); }
+}
+
+document.addEventListener("keydown", function(e) {
+  if (e.target.closest('[contenteditable]')) return;
+  if (e.key === "ArrowRight") nextSlide();
+  if (e.key === "ArrowLeft")  prevSlide();
+});
+
+// ── Draw red arrowhead only (no stem) pointing in given angle ──
+function drawArrowhead(canvas, x, y, angle) {
+  const ctx = canvas.getContext("2d");
+  const size = canvas.width * 0.055; // scales with image size
+
+  ctx.save();
+  ctx.fillStyle = "#ff2222";
+  ctx.strokeStyle = "#ff2222";
+
+  // Translate to tip point, rotate to angle
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  // Draw solid triangle: tip at (0,0), base behind
+  ctx.beginPath();
+  ctx.moveTo(0, 0);                          // tip
+  ctx.lineTo(-size, -size * 0.5);            // base left
+  ctx.lineTo(-size, size * 0.5);             // base right
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Auto fit — always measures against true 1080px, not scaled preview ──
+function autoFitText(el) {
+  const slideHeight = 1080; // fixed — never use clientHeight which reflects screen scale
+  let size = 80;
+  el.style.fontSize = size + "px";
+  // Use scrollHeight vs the actual slide container height
+  while (el.scrollHeight > slideHeight && size > 18) {
+    size -= 2;
+    el.style.fontSize = size + "px";
+  }
+}
+
+// ── Download — capture at true 1080px regardless of screen scaling ──
+function downloadSlide() {
+  const slide = document.getElementById("slide");
+  const frame = document.querySelector('.slide-frame');
+
+  // Temporarily remove scaling so html2canvas captures full resolution
+  const prevTransform = frame.style.transform;
+  frame.style.transform = 'scale(1)';
+
+  html2canvas(slide, {
+    useCORS: true,
+    scale: 1,
+    width: 1080,
+    height: 1080
+  }).then(canvas => {
+    frame.style.transform = prevTransform; // restore scale
+    const link = document.createElement("a");
+    link.download = `slide_${currentSlide + 1}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
