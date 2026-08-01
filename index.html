@@ -299,6 +299,155 @@ input[type="file"]::-webkit-file-upload-button {
   width: 100%;
   margin-bottom: 20px;
 }
+/* ── Header actions ── */
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+}
+.settings-btn {
+  position: absolute;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.settings-btn:hover { background: var(--border); }
+
+/* ── AI Generate panel ── */
+.ai-panel textarea {
+  width: 100%;
+  min-height: 80px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  outline: none;
+  padding: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  resize: vertical;
+}
+.ai-status {
+  font-size: 12px;
+  padding: 0 14px 12px;
+  color: var(--muted);
+}
+.ai-status.error { color: #ff6b6b; }
+.ai-status.success { color: #4ade80; }
+.spinner {
+  display: inline-block;
+  width: 11px; height: 11px;
+  border: 2px solid var(--muted);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Settings modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { font-size: 14px; font-weight: 600; }
+.modal-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 18px; cursor: pointer; line-height: 1;
+}
+.modal-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.provider-btn {
+  padding: 10px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.provider-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #00c2ff11;
+}
+.modal-body input[type="text"],
+.modal-body input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.key-row { display: flex; gap: 6px; }
+.key-row input { flex: 1; }
+.key-row button {
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+.modal-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
 .grid-1 { grid-template-columns: 1fr; }
 .grid-2 { grid-template-columns: 1fr 1fr; }
 .grid-3 { grid-template-columns: 1fr 1fr; }
@@ -321,7 +470,6 @@ input[type="file"]::-webkit-file-upload-button {
   text-align: center;
   margin: auto 0;
   line-height: 1.3;
-  color: #00c2ff;
 }
 #slideText h2 { font-size: 55px; margin-bottom: 10px; }
 #slideText h3 { font-size: 45px; margin-bottom: 10px; }
@@ -335,11 +483,33 @@ input[type="file"]::-webkit-file-upload-button {
 <body>
 
 <header>
-  <h1>RadSlides Gen</h1>
+  <div class="header-row">
+    <h1>RadSlides Gen</h1>
+    <button class="settings-btn" onclick="openSettings()" title="AI Settings">⚙️</button>
+  </div>
   <p>1080 × 1080 · Instagram-ready</p>
 </header>
 
 <div class="layout">
+
+  <!-- AI Generate -->
+  <div class="panel ai-panel">
+    <div class="panel-title">🤖 AI Generate — describe the case/topic</div>
+    <textarea id="aiTopic" placeholder="e.g. Fahr Disease — or paste full case details / imaging findings"></textarea>
+    <div class="actions" style="padding:0 14px 10px;">
+      <button class="btn btn-primary" onclick="generateWithAI()" id="aiGenBtn">✨ Generate Content</button>
+    </div>
+    <div class="ai-status" id="aiStatus"></div>
+  </div>
+
+  <!-- Caption Output -->
+  <div class="panel">
+    <div class="panel-title">Instagram Caption (from AI Generate)</div>
+    <textarea id="captionOutput" style="width:100%;min-height:110px;background:transparent;color:var(--text);border:none;outline:none;padding:14px;font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;resize:vertical;" placeholder="Generated caption will appear here after you use AI Generate above"></textarea>
+    <div class="actions" style="padding:0 14px 14px;">
+      <button class="btn btn-outline" onclick="copyCaption(this)">📋 Copy Caption</button>
+    </div>
+  </div>
 
   <!-- Text Editor -->
   <div class="panel">
@@ -540,6 +710,357 @@ function generateSlides() {
   showSlide();
 }
 
+// ═══════════════════════════════════════════
+// AI SETTINGS & GENERATION
+// ═══════════════════════════════════════════
+
+const PROVIDER_DEFAULTS = {
+  openai: { model: 'gpt-4o', hint: 'OpenAI blocks direct browser requests (CORS). This will likely fail unless routed through your own proxy server.' },
+  gemini: { model: 'gemini-2.0-flash', hint: 'Works directly from the browser — no proxy needed.' },
+  grok:   { model: 'grok-2-latest', hint: 'xAI typically blocks direct browser requests (CORS). May need a proxy server.' },
+  claude: { model: 'claude-sonnet-4-6', hint: 'Anthropic requires a special browser-access header, which this app sends — but direct client-side use is not officially supported for production and may be blocked.' },
+  custom: { model: '', hint: 'Assumes an OpenAI-compatible /chat/completions endpoint.' }
+};
+
+let aiSettings = { provider: 'gemini', apiKey: '', model: PROVIDER_DEFAULTS.gemini.model, customUrl: '' };
+
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem('radslides_ai_settings');
+    if (saved) aiSettings = JSON.parse(saved);
+  } catch (e) { /* ignore */ }
+}
+
+function openSettings() {
+  loadSettings();
+  document.getElementById('settingsModal').classList.add('open');
+  selectProvider(aiSettings.provider, true);
+  document.getElementById('apiKeyInput').value = aiSettings.apiKey || '';
+  document.getElementById('modelInput').value = aiSettings.model || PROVIDER_DEFAULTS[aiSettings.provider].model;
+  document.getElementById('customUrlInput').value = aiSettings.customUrl || '';
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function selectProvider(provider, skipModelReset) {
+  document.querySelectorAll('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
+  document.getElementById('customUrlField').style.display = provider === 'custom' ? 'block' : 'none';
+  document.getElementById('providerHint').textContent = PROVIDER_DEFAULTS[provider].hint;
+  aiSettings.provider = provider;
+  if (!skipModelReset) {
+    document.getElementById('modelInput').value = PROVIDER_DEFAULTS[provider].model;
+  }
+}
+
+function toggleKeyVisibility() {
+  const input = document.getElementById('apiKeyInput');
+  const btn = document.getElementById('keyToggleBtn');
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  btn.textContent = isPassword ? 'Hide' : 'Show';
+}
+
+function saveSettings() {
+  aiSettings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  aiSettings.model = document.getElementById('modelInput').value.trim();
+  aiSettings.customUrl = document.getElementById('customUrlInput').value.trim();
+  localStorage.setItem('radslides_ai_settings', JSON.stringify(aiSettings));
+  closeSettings();
+}
+
+// ── System prompt — generalized across all radiology subspecialties, adapted from your ChatGPT setup ──
+const RADIOLOGY_SYSTEM_PROMPT = `You are an expert Radiologist across all subspecialties (Neuroradiology, Chest, Abdomen, MSK, Cardiovascular, Genitourinary, Pediatric, Breast, Nuclear Medicine) and Medical Educator creating high-yield educational content for Instagram.
+
+Use whichever reference is most relevant to the topic's subspecialty:
+1. Diagnostic Imaging series (Amirsys) — all subspecialties
+2. STATdx
+3. Osborn's Brain / Osborn's Head & Neck Imaging — neuroradiology
+4. Dähnert's Radiology Review Manual — cross-specialty
+5. Fundamentals of Body CT (Webb) — chest/abdomen
+6. Grainger & Allison's Diagnostic Radiology — general
+7. Radiopaedia (only if consistent with standard references)
+
+Never include ambiguous, controversial, research-only, or poorly validated information. If a fact is not consistently supported across standard references, exclude it. Do not mention uncertainty unless explicitly asked.
+
+Every topic must be fact-checked before generating content.
+
+━━━━━━━━━━━━━━━━━━━━━━
+HARD SLIDE DENSITY LIMIT — READ THIS FIRST
+━━━━━━━━━━━━━━━━━━━━━━
+
+This is Instagram, not a textbook. People swipe away from dense slides in under 2 seconds.
+
+Every slide (EXCEPT Key Differentiation) gets a MAXIMUM of 3 points — ideally 1-2. Never 4 or more.
+
+Each point is a SHORT FRAGMENT, not a sentence. No subordinate clauses, no "which," "due to," "resulting in," no stacked commas joining multiple facts into one line. If a point needs a comma to fit two ideas, split it or cut one.
+
+Example of WRONG (textbook prose, too dense):
+"Symmetric calcifications in basal ganglia, dentate nuclei, thalami and subcortical white matter which occur due to abnormal calcium-phosphate metabolism in small vessel walls"
+
+Example of RIGHT (Instagram-density):
+Symmetric basal ganglia calcification
+Dentate nuclei commonly involved
+
+If your first draft of a slide has more than 3 points or any point longer than ~8 words, cut it down before finalizing. Prioritize the single highest-yield fact over completeness.
+
+━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━
+
+Always generate TWO outputs:
+1. Markdown slides
+2. Instagram caption
+Nothing else.
+
+━━━━━━━━━━━━━━━━━━━━━━
+MARKDOWN FORMAT
+━━━━━━━━━━━━━━━━━━━━━━
+
+Return the slides inside a markdown code block. Use EXACTLY this structure.
+
+# [Topic]
+
+---
+
+**Image:** [Ideal teaching image describing modality, sequence, plane and expected finding]
+
+---
+
+# What It Is
+(or "The Sign", "The Pattern", "Overview", "Classification", "Spectrum", etc. depending on the topic)
+1-2 short fragments max. Not a definition sentence — a punchy takeaway.
+
+---
+
+# Key Imaging Features
+1-3 short fragments max. Only the highest yield imaging findings. One fact per line.
+
+---
+
+# Clinical Clues
+(or Age Group/Common Location/Mechanism/Classification depending on what best suits the topic. Choose the heading based on the topic — never force the same headings.)
+1-3 short fragments max.
+
+---
+
+# Key Differentiation
+Compare only the most important mimics (max 3-4). Use concise one-line comparisons — a few words per finding, not a sentence.
+Example:
+Disease A:
+finding
+Disease B:
+finding
+Disease C:
+finding
+Only include exam-relevant differentiators.
+
+---
+
+# Imaging Pearls
+1-2 short fragments max. High-yield practical radiology points. May include: best sequence, best modality, surgical implication, histopathological correlation, imaging pitfall, or prognostic implication — use whichever is most relevant.
+
+---
+
+# Exam Pearl 🎯
+ONE sentence only. Highest yield MD/DNB examination takeaway.
+
+---
+
+# Follow for More
+Follow **@radiologycaseslices**
+for daily radiology pearls
+
+❤️ Like this post
+📖 Check the caption for more details
+📌 Save this post
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULES FOR SLIDES
+━━━━━━━━━━━━━━━━━━━━━━
+
+Never exceed 3 points per slide except Key Differentiation. Never use paragraphs or full sentences — fragments only. Never repeat information. Avoid unnecessary pathology. Keep wording crisp. Everything must be exam oriented. When in doubt, cut a point rather than keep it.
+
+If describing tumors include whichever are appropriate: Age, Location, Imaging, Differentials, Prognosis, Surgical implication.
+If describing signs include: Mechanism, Conditions, Differentiation, Exam pearl.
+If describing diseases include: Imaging, Clinical clue, Differentials, Pearls.
+If describing classifications: only important types. Never overload slides.
+Always adapt headings according to topic.
+
+━━━━━━━━━━━━━━━━━━━━━━
+CAPTION FORMAT
+━━━━━━━━━━━━━━━━━━━━━━
+
+After the markdown, generate ONE Instagram caption. Style: short, easy to read, educational, scroll stopping, 5-8 short lines, no long paragraphs.
+
+Structure: Hook → Diagnosis/topic → One important teaching point → One practical takeaway → CTA.
+
+CTA must always include: ❤️ Like if this helped / 📖 Check the slides for quick revision / 📌 Save for future reference.
+
+━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY WORDS
+━━━━━━━━━━━━━━━━━━━━━━
+
+Every caption MUST naturally include all three words: Radiology, Teaching, Residents (or Radiology Residents).
+
+━━━━━━━━━━━━━━━━━━━━━━
+HASHTAGS
+━━━━━━━━━━━━━━━━━━━━━━
+
+Always end with: #Radiology #Teaching #RadiologyResidents #DNB #MDRadiology
+Then add the modality hashtags relevant to this topic (e.g. #MRI, #CT, #USG, #Xray) and one relevant subspecialty hashtag (e.g. #Neuroradiology, #ChestRadiology, #MSKRadiology, #Abdominalradiology, #Breastimaging), plus 3-6 topic-specific hashtags.
+
+━━━━━━━━━━━━━━━━━━━━━━
+QUALITY CONTROL
+━━━━━━━━━━━━━━━━━━━━━━
+
+Before finalizing internally verify:
+✓ Cross-checked with standard references above
+✓ No hallucinated facts
+✓ No research-only thresholds
+✓ No controversial statements
+✓ Imaging terminology correct
+✓ Differential diagnoses are accurate
+✓ Sequences/modalities are correctly mentioned
+✓ Clinical clues are standard textbook facts
+✓ Exam pearl is genuinely high yield
+✓ No slide (except differentiation) has more than 3 points, and each point is a short fragment, not a sentence
+✓ Caption contains Radiology, Teaching, Residents
+✓ CTA includes Like + Check slides/caption + Save
+
+If any statement is not standard textbook knowledge, remove it instead of mentioning it.`;
+
+// ── Parse AI response: separate the fenced slide markdown from the trailing Instagram caption ──
+function parseAIResponse(raw) {
+  const codeBlockMatch = raw.match(/```(?:markdown)?\s*([\s\S]*?)```/i);
+  if (codeBlockMatch) {
+    const slidesMd = codeBlockMatch[1].trim();
+    const caption = raw.slice(codeBlockMatch.index + codeBlockMatch[0].length).trim();
+    return { slidesMd, caption };
+  }
+  return { slidesMd: raw.trim(), caption: '' };
+}
+
+function setAIStatus(msg, type) {
+  const el = document.getElementById('aiStatus');
+  el.className = 'ai-status' + (type ? ' ' + type : '');
+  el.innerHTML = msg;
+}
+
+async function generateWithAI() {
+  loadSettings();
+  const topic = document.getElementById('aiTopic').value.trim();
+  if (!topic) { setAIStatus('Enter a topic or case first.', 'error'); return; }
+  if (!aiSettings.apiKey) { setAIStatus('No API key set — open ⚙️ Settings first.', 'error'); return; }
+
+  const btn = document.getElementById('aiGenBtn');
+  btn.disabled = true;
+  setAIStatus('<span class="spinner"></span>Generating with ' + aiSettings.provider + '...', '');
+
+  try {
+    let raw;
+    if (aiSettings.provider === 'openai') raw = await callOpenAICompatible('https://api.openai.com/v1/chat/completions', aiSettings.apiKey, aiSettings.model, RADIOLOGY_SYSTEM_PROMPT, topic);
+    else if (aiSettings.provider === 'gemini') raw = await callGemini(aiSettings.apiKey, aiSettings.model, RADIOLOGY_SYSTEM_PROMPT, topic);
+    else if (aiSettings.provider === 'grok') raw = await callOpenAICompatible('https://api.x.ai/v1/chat/completions', aiSettings.apiKey, aiSettings.model, RADIOLOGY_SYSTEM_PROMPT, topic);
+    else if (aiSettings.provider === 'claude') raw = await callClaude(aiSettings.apiKey, aiSettings.model, RADIOLOGY_SYSTEM_PROMPT, topic);
+    else if (aiSettings.provider === 'custom') raw = await callOpenAICompatible(aiSettings.customUrl, aiSettings.apiKey, aiSettings.model, RADIOLOGY_SYSTEM_PROMPT, topic);
+
+    const { slidesMd, caption } = parseAIResponse(raw);
+
+    const editor = document.getElementById('editor');
+    editor.innerText = slidesMd;
+    generateSlides();
+
+    const captionBox = document.getElementById('captionOutput');
+    if (captionBox) captionBox.value = caption;
+
+    setAIStatus('✓ Generated — review and edit below, then Generate slides.', 'success');
+  } catch (err) {
+    console.error(err);
+    const isCORS = err.message && (err.message.includes('Failed to fetch') || err.message.includes('CORS'));
+    if (isCORS) {
+      setAIStatus('Blocked by the browser (CORS) — ' + aiSettings.provider + ' does not allow direct calls from a webpage. Try Gemini, or route this through your own proxy server.', 'error');
+    } else {
+      setAIStatus('Error: ' + err.message, 'error');
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function callOpenAICompatible(url, apiKey, model, systemPrompt, userPrompt) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    throw new Error('API error ' + res.status + ': ' + errText.slice(0, 200));
+  }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+async function callGemini(apiKey, model, systemPrompt, userPrompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts: [{ text: userPrompt }] }]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    throw new Error('API error ' + res.status + ': ' + errText.slice(0, 200));
+  }
+  const data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+async function callClaude(apiKey, model, systemPrompt, userPrompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 1800,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    throw new Error('API error ' + res.status + ': ' + errText.slice(0, 200));
+  }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+document.addEventListener('DOMContentLoaded', loadSettings);
+
+// ── Rotating heading color by slide index — cycles every 4 slides ──
+const HEADING_PALETTE = ['#ff6b6b', '#00c2ff', '#ffd166', '#4ade80']; // red, cyan, yellow, green
+function getHeadingColor(slideIndex) {
+  return HEADING_PALETTE[slideIndex % HEADING_PALETTE.length];
+}
+
 // ── Parse inline markdown (bold/italic) — works on plain text AND html mixed lines ──
 function applyInline(line) {
   // Handle ** bold ** — both markdown typed and literal text
@@ -566,14 +1087,15 @@ function showSlide() {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const headingMatch = line.match(/^(#{1,3})\s+(.*)/);
+    const headingMatch = line.match(/^\s*(#{1,3})\s+(.*)/);
     const listMatch = line.match(/^\s*[-*]\s+(.*)/);
 
     if (headingMatch) {
       if (inList) { output += '</ul>'; inList = false; }
       const level = headingMatch[1].length;
       const cls = isTitleSlide ? ' class="title-center"' : '';
-      output += `<h${level}${cls}>${applyInline(headingMatch[2])}</h${level}>`;
+      const slideColor = getHeadingColor(currentSlide);
+      output += `<h${level}${cls} style="color:${slideColor}">${applyInline(headingMatch[2])}</h${level}>`;
     } else if (listMatch) {
       if (!inList) { output += '<ul>'; inList = true; }
       output += `<li>${applyInline(listMatch[1])}</li>`;
@@ -582,7 +1104,13 @@ function showSlide() {
       if (line.trim() === '') {
         output += '<br>';
       } else {
-        output += applyInline(line) + '<br>';
+        const labelMatch = line.match(/^\*\*(.+?):\*\*(.*)$/);
+        if (labelMatch) {
+          const slideColor = getHeadingColor(currentSlide);
+          output += `<strong style="color:${slideColor}">${labelMatch[1]}:</strong>${applyInline(labelMatch[2])}<br>`;
+        } else {
+          output += applyInline(line) + '<br>';
+        }
       }
     }
   }
@@ -714,6 +1242,35 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "ArrowLeft")  prevSlide();
 });
 
+function copyCaption(btn) {
+  const box = document.getElementById('captionOutput');
+  if (!box.value) return;
+
+  const showCopied = () => {
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  };
+
+  const fallbackCopy = () => {
+    box.focus();
+    box.select();
+    box.setSelectionRange(0, 99999); // mobile Safari/Chrome needs this
+    try {
+      const ok = document.execCommand('copy');
+      if (ok) { showCopied(); return; }
+    } catch (e) { /* fall through */ }
+    setAIStatus('Could not copy automatically — text is selected, use your keyboard copy shortcut.', 'error');
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(box.value).then(showCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
 // ── Draw red arrowhead only (no stem) pointing in given angle ──
 function drawArrowhead(canvas, x, y, angle) {
   const ctx = canvas.getContext("2d");
@@ -761,7 +1318,7 @@ function downloadSlide() {
 
   html2canvas(slide, {
     useCORS: true,
-    scale: 1,
+    scale: 4,        // renders at 4320x4320 — comfortably above 4K
     width: 1080,
     height: 1080
   }).then(canvas => {
@@ -779,5 +1336,48 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
 </script>
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>AI Settings</h3>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <span class="field-label">Provider</span>
+        <div class="provider-grid" id="providerGrid">
+          <button class="provider-btn" data-provider="openai" onclick="selectProvider('openai')">ChatGPT</button>
+          <button class="provider-btn" data-provider="gemini" onclick="selectProvider('gemini')">Gemini</button>
+          <button class="provider-btn" data-provider="grok" onclick="selectProvider('grok')">Grok</button>
+          <button class="provider-btn" data-provider="claude" onclick="selectProvider('claude')">Claude</button>
+          <button class="provider-btn" data-provider="custom" onclick="selectProvider('custom')">Custom</button>
+        </div>
+      </div>
+      <div>
+        <span class="field-label">API Key</span>
+        <div class="key-row">
+          <input type="password" id="apiKeyInput" placeholder="Paste your API key">
+          <button type="button" onclick="toggleKeyVisibility()" id="keyToggleBtn">Show</button>
+        </div>
+      </div>
+      <div>
+        <span class="field-label">Model</span>
+        <input type="text" id="modelInput" placeholder="Model name">
+      </div>
+      <div id="customUrlField" style="display:none;">
+        <span class="field-label">Custom Base URL</span>
+        <input type="text" id="customUrlInput" placeholder="https://your-endpoint.com/v1/chat/completions">
+        <div class="field-hint">Must accept an OpenAI-compatible chat/completions request format.</div>
+      </div>
+      <div class="field-hint" id="providerHint"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
